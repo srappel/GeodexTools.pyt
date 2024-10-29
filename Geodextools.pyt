@@ -2,6 +2,9 @@
 import arcpy
 import os
 import json
+from pathlib import Path
+from json import JSONDecodeError
+from jsonschema import validate, ValidationError
 from openindexmaps_py.oimpy import OpenIndexMap, Sheet
 from openindexmaps_py.geodex import GeodexDictionary
 
@@ -13,7 +16,7 @@ class Toolbox:
         """Define the toolbox (the name of the toolbox is the name of the .pyt file)."""
         self.label = "GeodexTools"
         self.alias = "geodextools"
-        self.tools = [LoadData, ExportGeodexJSON]  # Add new tools here
+        self.tools = [LoadData, ExportGeodexJSON, ValidateGeodexJSON]  # Add new tools here
 
 
 class LoadData:
@@ -33,6 +36,8 @@ class LoadData:
             parameterType="Required",
             direction="Input",
         )
+
+        param0.value = r"C:\Users\srappel\Documents\ArcGIS\Projects\Geodex\Connections\connection.sde"
 
         params = [param0]
         return params
@@ -151,42 +156,16 @@ class ExportGeodexJSON:
             displayName="Flip RECORD and LOCATION",
             name="flip",
             datatype="Boolean",
-            parameterType="Optional",  # It's optional, default can be False
+            parameterType="Optional",  
             direction="Input",
         )
-        param2.value = False  # Set default value to False
+        param2.value = False 
         params.append(param2)
 
         return params
 
     def updateParameters(self, parameters):
         """Modify the values and properties of parameters before internal validation is performed."""
-        
-        # Check if the input Geodex layer is None and set a default
-        if parameters[0].value is None:
-            # Default feature layer: Geodex.DBO.Geodex
-            aprx = arcpy.mp.ArcGISProject("CURRENT")
-            active_map = aprx.activeMap
-
-            # Check if Geodex.DBO.Geodex is available in the active map layers
-            for lyr in active_map.listLayers():
-                if lyr.name == "Geodex.DBO.Geodex":
-                    parameters[0].value = lyr
-                    break
-
-        # Check if the output JSON file path is None and set a default
-        if parameters[1].value is None:
-            # Set default output file relative to the project folder
-            aprx = arcpy.mp.ArcGISProject("CURRENT")
-            project_folder = aprx.homeFolder
-
-            parameters[1].value = os.path.join(project_folder, "output.json")
-
-        # Ensure the FLIP parameter has a default value
-        if parameters[2].value is None:
-            # Set default value of FLIP to False if not specified
-            parameters[2].value = False
-
         return
 
     def execute(self, parameters, messages):
@@ -324,7 +303,72 @@ class ExportGeodexJSON:
         messages.addMessage(f"Successfully exported {len(sheets)} records to {output_json_path}")
 
         return
-        
+
+
+class ValidateGeodexJSON:
+    def __init__(self):
+        """Define the tool (tool name is the name of the class)."""
+        self.label = "Validate Geodex JSON"
+        self.description = "Validates a Geodex JSON file against a provided JSON Schema"
+
+    def getParameterInfo(self):
+        """Define the tool parameters."""
+
+        # First parameter: JSON file
+        param0 = arcpy.Parameter(
+            displayName="Input JSON File",
+            name="input_json",
+            datatype="DEFile",
+            parameterType="Required",
+            direction="Input"
+        )
+
+        # Second parameter: JSON Schema
+        param1 = arcpy.Parameter(
+            displayName="JSON Schema File",
+            name="json_schema",
+            datatype="DEFile",
+            parameterType="Required",
+            direction="Input"
+        )
+        param1.value = r"C:\Users\srappel\Documents\ArcGIS\Projects\Geodex\schemas\1.0.0.schema.json" 
+
+        return [param0, param1]
+
+    def isLicensed(self):
+        """Set whether the tool is licensed to execute."""
+        return True
+
+    def execute(self, parameters, messages):
+        input_json = Path(parameters[0].valueAsText)
+        schema_path = Path(parameters[1].valueAsText)
+
+        try:
+            # Load the schema from the given path
+            with schema_path.open("r") as schema_file:
+                schema = json.load(schema_file)
+
+            with input_json.open("r") as json_file:
+                json_data = json.load(json_file)
+
+            # Validate the FeatureCollection against the schema
+            validate(json_data, schema)
+            messages.addMessage("The FeatureCollection is valid according to the JSON Schema.")
+        except ValidationError as e:
+            # Enhanced feedback with context
+            messages.addErrorMessage(f"Validation error: {e.message} at {e.path}")
+        except FileNotFoundError as e:
+            messages.addErrorMessage(f"File not found: {e.filename}")
+        except JSONDecodeError as e:
+            messages.addErrorMessage(f"Error decoding JSON: {e.msg}")
+        except Exception as e:
+            messages.addErrorMessage(f"An unexpected error occurred: {e}")
+
+    def postExecute(self, parameters):
+        """This method takes place after outputs are processed and added to the display."""
+        return
+
+
 ##### TEMPLATE #####
 #  class Tool:
 #     def __init__(self):
