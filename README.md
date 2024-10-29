@@ -3,7 +3,7 @@
 ![image](https://github.com/user-attachments/assets/b9591292-9133-4861-a91f-1f82f8641499)
 
 
-GeodexTools.pyt is a Python Toolbox for ArcGIS Pro for working with the Geodex database--a polygon dataset stored in an Enterprise Geodatabase (SQL Server) on UWM's ArcGIS Server. The toolbox includes tools for loading Geodex data into ArcGIS and exporting it to GeoJSON format in the OpenIndexMaps specification.
+GeodexTools.pyt is a Python Toolbox for ArcGIS Pro for working with the Geodex database--a polygon dataset stored in an Enterprise Geodatabase (SQL Server) on UWM's ArcGIS Server. The toolbox includes tools for loading Geodex data into ArcGIS and exporting it to GeoJSON format in the [OpenIndexMaps](https://openindexmaps.org/) 1.0 specification.
 
 ## Features
 
@@ -33,4 +33,10 @@ GeodexTools.pyt is a Python Toolbox for ArcGIS Pro for working with the Geodex d
 5. (Optional) Set the Flip RECORD and LOCATION parameter to switch these fields in the output.
 6. Run the tool, and the selected records will be saved as a JSON file which meets OIM specification 1.0
 
+### Validate Geodex JSON Tool
 
+1. Open the Validate Geodex JSON tool.
+1. Select the Input JSON File by browsing to your JSON or GeoJSON file.
+1. Select the JSON Schema File or use the default schema.
+1. Run the tool to validate your JSON file against the schema.
+1. A message will confirm whether the validation was successful or detail any errors.
